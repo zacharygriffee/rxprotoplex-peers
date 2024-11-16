@@ -1,0 +1,49 @@
+{
+  "name": "rxprotoplex-peers",
+  "version": "0.0.1",
+  "description": "A reactive peer-to-peer management library built on RxJS and Protoplex for efficient signaling, matchmaking, and multiplexing.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "brittle tests/peermanager.test.js"
+  },
+  "dependencies": {
+    "@ngneat/elf": "^2.5.1",
+    "@ngneat/elf-entities": "^5.0.2",
+    "b4a": "^1.6.7",
+    "echo-prop": "^1.0.1",
+    "get-webrtc": "^1.0.1",
+    "nanoid": "^5.0.8",
+    "rxjs": "^7.8.1",
+    "rxprotoplex": "^1.2.1",
+    "rxprotoplex-pingpong": "^0.2.2",
+    "rxprotoplex-rpc": "^1.0.5",
+    "rxprotoplex-websocket": "^1.0.1"
+  },
+  "devDependencies": {
+    "brittle": "^3.7.0",
+    "ws": "^8.18.0"
+  },
+  "keywords": [
+    "peer-to-peer",
+    "p2p",
+    "rxjs",
+    "protoplex",
+    "webrtc",
+    "websocket",
+    "multiplexing",
+    "networking",
+    "matchmaking",
+    "udx"
+  ],
+  "author": "Zachary Griffee <zacharygriffee@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/zacharygriffee/rxprotoplex-peers#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zacharygriffee/rxprotoplex-peers.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zacharygriffee/rxprotoplex-peers/issues"
+  }
+}
