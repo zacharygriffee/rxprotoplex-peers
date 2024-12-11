@@ -5,3 +5,5 @@ export {idOf} from "./lib/socket/idOf.js";
 // servers
 export {server} from "./lib/servers/server.js";
 export {webSocketServer} from "./lib/servers/webSocketServer.js";
+// Server utils
+export {getWebSocketURL} from "./lib/util/getWebSocketUrl.js";

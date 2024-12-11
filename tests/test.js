@@ -8,7 +8,7 @@ import {
     connectStream$,
     listenOnSocket$, webSocketServer, getInterfaceOfId, connect
 } from "../index.js";
-import {getWebSocketURL} from "./getWebSocketUrl.js";
+import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
 
 async function useWebServer(cb, t) {
     const wss = new WebSocketServer({ port: 5000 });

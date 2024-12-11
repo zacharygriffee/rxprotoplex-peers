@@ -1,21 +1,32 @@
 # rxprotoplex-peers
 
-A powerful library for managing remoteInterface-to-remoteInterface connections, signaling, and WebSocket server interactions. Designed with flexibility and reactivity in mind, `rxprotoplex-peers` leverages RxJS and Protoplex for efficient remoteInterface management and multiplexing.
+A robust library for managing WebSocket and WebRTC signaling, socket multiplexing, and peer-to-peer communication. Designed with a reactive architecture leveraging RxJS and Protoplex, `rxprotoplex-peers` simplifies complex networking scenarios.
 
-# ALPHA VERSION
+---
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [createSocketManager](#peermanager)
-  - [getPeerManager](#getpeermanager)
-  - [setDefaultIdMap](#setdefaultidmap)
-  - [basePeer](#basepeer)
-  - [webrtcSignalingRelay](#webrtcSignalingRelay)
-  - [server](#server)
-  - [webSocketPeer](#websocketpeer)
-  - [webSocketServer](#websocketserver)
+  - [WebSocket Network Interfaces](#websocket-network-interfaces)
+    - [addWebSocketNetworkInterface](#addwebsocketnetworkinterface)
+    - [closeInterface](#closeinterface)
+    - [selectInterfaceByIp$](#selectinterfacebyip)
+    - [networkInterfaceConnected$](#networkinterfaceconnected)
+  - [WebRTC Signaling](#webrtc-signaling)
+    - [webrtcSignalingRelay](#webrtcsignalingrelay)
+  - [Socket Management](#socket-management)
+    - [connect](#connect)
+    - [listenOnSocket$](#listenonsocket)
+    - [connectStream$](#connectstream)
+    - [closeSocket](#closesocket)
+    - [closeSocketsOfNetworkInterface](#closesocketsofnetworkinterface)
+  - [WebSocket Utilities](#websocket-utilities)
+    - [webSocketServer](#websocketserver)
+    - [getWebSocketURL](#getwebsocketurl)
+  - [Helper Methods](#helper-methods)
+    - [idOf](#idof)
+    - [receiveIce](#receiveice)
 - [License](#license)
 
 ---
@@ -32,145 +43,232 @@ npm install rxprotoplex-peers
 
 ## Usage
 
-### `createSocketManager`
+### WebSocket Network Interfaces
 
-Creates a remoteInterface manager for managing remoteInterface connections and states.
+#### `addWebSocketNetworkInterface`
+
+Adds a WebSocket network interface for communication.
 
 ```javascript
-const createSocketManager = createSocketManager(name, idMap = defaultIdMap);
+const nicId = addWebSocketNetworkInterface(url, config);
 ```
 
-#### Parameters
-- **`name`** (`string`): The name of the remoteInterface manager instance.
-- **`idMap`** (`Function|string`): A function or property string to map connections to unique IDs (default: `defaultIdMap`).
+**Parameters:**
+- `url` (string): The WebSocket server URL.
+- `config` (object): Configuration options for the network interface.
 
-#### Returns
-- `Object`: The remoteInterface manager instance.
+**Returns:**
+- `string`: The ID of the created network interface.
 
 ---
 
-### `getPeerManager`
+#### `closeInterface`
 
-Retrieves an existing remoteInterface manager by name.
+Closes a WebSocket network interface and all associated sockets.
 
 ```javascript
-const manager = getPeerManager(name);
+closeInterface(interfaceId, error);
 ```
 
-#### Parameters
-- **`name`** (`string`): The name of the remoteInterface manager to retrieve.
-
-#### Returns
-- `Object|undefined`: The remoteInterface manager instance if found, or `undefined`.
+**Parameters:**
+- `interfaceId` (string | object): The interface ID or object to close.
+- `error` (Error, optional): Error to propagate during closure.
 
 ---
 
-### `setDefaultIdMap`
+#### `selectInterfaceByIp$`
 
-Sets the default ID mapping function or property string.
+Observable that emits the interface matching the specified IP.
 
 ```javascript
-setDefaultIdMap(fnOrString);
+selectInterfaceByIp$(ip).subscribe(iface => console.log(iface));
 ```
 
-#### Parameters
-- **`fnOrString`** (`Function|string`): A function to map entities to IDs, or a property string.
+**Parameters:**
+- `ip` (string): The IP address to search for.
+
+**Returns:**
+- `Observable<object>`: Emits the matching interface.
 
 ---
 
-### `basePeer`
+#### `networkInterfaceConnected$`
 
-Creates a base remoteInterface object by combining a Plex instance with remoteInterface management functionality.
+Emits when a network interface is connected and verified.
 
 ```javascript
-const remoteInterface = basePeer(id, plex);
+networkInterfaceConnected$(id).subscribe(iface => console.log('Connected:', iface));
 ```
 
-#### Parameters
-- **`id`** (`string`): The unique identifier for the remoteInterface.
-- **`plex`** (`Object`): A Plex instance for multiplexing connections.
+**Parameters:**
+- `id` (string): The ID of the network interface.
 
-#### Returns
-- `Object`: The enhanced Plex instance with remoteInterface-related functionality.
+**Returns:**
+- `Observable<object>`: Emits the connected and verified interface.
 
 ---
 
-### `webrtcSignalingRelay`
+### WebRTC Signaling
 
-Handles relaying messages and signaling between peers.
+#### `webrtcSignalingRelay`
+
+Manages WebRTC signaling and ICE candidate relaying.
 
 ```javascript
-const relayHandler = webrtcSignalingRelay(manager, remoteInterface);
+const signaling = webrtcSignalingRelay(peerManager, socket);
 ```
 
-#### Parameters
-- **`manager`** (`Object`): The remoteInterface manager instance.
-- **`remoteInterface`** (`Object`): The remoteInterface instance (default: `manager`).
+**Parameters:**
+- `peerManager` (object): Manages peer connections.
+- `socket` (object): Associated socket instance.
 
-#### Returns
-- `Object`: An object exposing webrtcSignalingRelay-related methods as RPC.
+**Returns:**
+- `object`: WebRTC signaling methods as RPC.
 
 ---
 
-### `server`
+### Socket Management
 
-Creates a server for managing remoteInterface connections and relaying messages.
+#### `connect`
+
+Establishes a connection between two interfaces.
 
 ```javascript
-const incomingPlex$ = server(createSocketManager, config);
+connect(localIp, remoteIp);
 ```
 
-#### Parameters
-- **`createSocketManager`** (`Object`): The remoteInterface manager instance.
-- **`config`** (`Object`): Configuration options for the server.
-    - **`subnet`** (`string`): Subnet for IP allocation (default: `72.16.0.0/14`).
-    - **`channel`** (`string`): Communication channel for signaling.
-    - **`close$`** (`Observable`): Observable signaling server closure (default: `NEVER`).
-
-#### Returns
-- `Subject`: A subject for managing incoming Plex connections.
+**Parameters:**
+- `localIp` (string): Local interface IP.
+- `remoteIp` (string): Remote interface IP.
 
 ---
 
-### `webSocketPeer`
+#### `listenOnSocket$`
 
-Creates a WebSocket-based remoteInterface.
+Listens on a specific channel for incoming connections.
 
 ```javascript
-const wsPeer = webSocketPeer(id, urlOrSocket, config);
+listenOnSocket$(ip, channel).subscribe(socket => console.log(socket));
 ```
 
-#### Parameters
-- **`id`** (`string`): The unique identifier for the remoteInterface.
-- **`urlOrSocket`** (`string|WebSocket`): WebSocket instance or URL for the connection.
-- **`config`** (`Object`): Additional WebSocket connection options.
+**Parameters:**
+- `ip` (string): IP address to listen on.
+- `channel` (string): Communication channel.
 
-#### Returns
-- `Object`: The WebSocket-based remoteInterface instance.
+**Returns:**
+- `Observable<object>`: Emits incoming socket connections.
 
 ---
 
-### `webSocketServer`
+#### `connectStream$`
 
-Creates a WebSocket server for managing remoteInterface connections.
+Connects to a remote socket over a specific channel.
 
 ```javascript
-const wsServer = webSocketServer(createSocketManager, wss, config);
+connectStream$(remoteIp, channel).subscribe(stream => stream.write('Hello'));
 ```
 
-#### Parameters
-- **`createSocketManager`** (`Object`): The remoteInterface manager instance.
-- **`wss`** (`Object`): WebSocket server instance (`ws.Server`).
-- **`config`** (`Object`): Configuration options.
-    - **`close$`** (`Observable`): Observable signaling server closure (default: `NEVER`).
-    - **`wsConfig`** (`Object`): Additional WebSocket connection options.
-    - **`server$`** (`Subject`): Existing server subject (default: new server created using `server`).
+**Parameters:**
+- `remoteIp` (string): Remote socket IP.
+- `channel` (string): Communication channel.
 
-#### Returns
-- `Subject`: The subject for managing server remoteInterface connections.
+**Returns:**
+- `Observable<object>`: Emits the connected stream.
+
+---
+
+#### `closeSocket`
+
+Closes a specific socket.
+
+```javascript
+closeSocket(socketId, error);
+```
+
+**Parameters:**
+- `socketId` (string | object): Socket ID or object.
+- `error` (Error, optional): Error to propagate during closure.
+
+---
+
+#### `closeSocketsOfNetworkInterface`
+
+Closes all sockets associated with a specific network interface.
+
+```javascript
+closeSocketsOfNetworkInterface(interfaceId, error);
+```
+
+**Parameters:**
+- `interfaceId` (string): Network interface ID.
+- `error` (Error, optional): Error to propagate during closure.
+
+---
+
+### WebSocket Utilities
+
+#### `webSocketServer`
+
+Sets up a WebSocket server for managing connections.
+
+```javascript
+webSocketServer(wss);
+```
+
+**Parameters:**
+- `wss` (WebSocketServer): WebSocket server instance.
+
+---
+
+#### `getWebSocketURL`
+
+Generates a WebSocket URL for a server.
+
+```javascript
+const url = getWebSocketURL(wss);
+```
+
+**Parameters:**
+- `wss` (WebSocketServer): WebSocket server instance.
+
+**Returns:**
+- `string`: WebSocket URL.
+
+---
+
+### Helper Methods
+
+#### `idOf`
+
+Retrieves the ID of an entity.
+
+```javascript
+const id = idOf(entity);
+```
+
+**Parameters:**
+- `entity` (object): Entity object.
+
+**Returns:**
+- `string`: Entity ID.
+
+---
+
+#### `receiveIce`
+
+Processes and applies an ICE candidate.
+
+```javascript
+receiveIce(socketIp, candidate);
+```
+
+**Parameters:**
+- `socketIp` (string): Sending socket IP.
+- `candidate` (object): ICE candidate data.
 
 ---
 
 ## License
 
 This library is licensed under the [MIT License](LICENSE).
+
