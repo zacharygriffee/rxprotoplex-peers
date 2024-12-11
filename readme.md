@@ -1,6 +1,6 @@
 # rxprotoplex-peers
 
-A powerful library for managing peer-to-peer connections, signaling, and WebSocket server interactions. Designed with flexibility and reactivity in mind, `rxprotoplex-peers` leverages RxJS and Protoplex for efficient peer management and multiplexing.
+A powerful library for managing remoteInterface-to-remoteInterface connections, signaling, and WebSocket server interactions. Designed with flexibility and reactivity in mind, `rxprotoplex-peers` leverages RxJS and Protoplex for efficient remoteInterface management and multiplexing.
 
 # ALPHA VERSION
 
@@ -8,7 +8,7 @@ A powerful library for managing peer-to-peer connections, signaling, and WebSock
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [peerManager](#peermanager)
+  - [createSocketManager](#peermanager)
   - [getPeerManager](#getpeermanager)
   - [setDefaultIdMap](#setdefaultidmap)
   - [basePeer](#basepeer)
@@ -32,36 +32,36 @@ npm install rxprotoplex-peers
 
 ## Usage
 
-### `peerManager`
+### `createSocketManager`
 
-Creates a peer manager for managing peer connections and states.
+Creates a remoteInterface manager for managing remoteInterface connections and states.
 
 ```javascript
-const peerManager = peerManager(name, idMap = defaultIdMap);
+const createSocketManager = createSocketManager(name, idMap = defaultIdMap);
 ```
 
 #### Parameters
-- **`name`** (`string`): The name of the peer manager instance.
+- **`name`** (`string`): The name of the remoteInterface manager instance.
 - **`idMap`** (`Function|string`): A function or property string to map connections to unique IDs (default: `defaultIdMap`).
 
 #### Returns
-- `Object`: The peer manager instance.
+- `Object`: The remoteInterface manager instance.
 
 ---
 
 ### `getPeerManager`
 
-Retrieves an existing peer manager by name.
+Retrieves an existing remoteInterface manager by name.
 
 ```javascript
 const manager = getPeerManager(name);
 ```
 
 #### Parameters
-- **`name`** (`string`): The name of the peer manager to retrieve.
+- **`name`** (`string`): The name of the remoteInterface manager to retrieve.
 
 #### Returns
-- `Object|undefined`: The peer manager instance if found, or `undefined`.
+- `Object|undefined`: The remoteInterface manager instance if found, or `undefined`.
 
 ---
 
@@ -80,18 +80,18 @@ setDefaultIdMap(fnOrString);
 
 ### `basePeer`
 
-Creates a base peer object by combining a Plex instance with peer management functionality.
+Creates a base remoteInterface object by combining a Plex instance with remoteInterface management functionality.
 
 ```javascript
-const peer = basePeer(id, plex);
+const remoteInterface = basePeer(id, plex);
 ```
 
 #### Parameters
-- **`id`** (`string`): The unique identifier for the peer.
+- **`id`** (`string`): The unique identifier for the remoteInterface.
 - **`plex`** (`Object`): A Plex instance for multiplexing connections.
 
 #### Returns
-- `Object`: The enhanced Plex instance with peer-related functionality.
+- `Object`: The enhanced Plex instance with remoteInterface-related functionality.
 
 ---
 
@@ -100,12 +100,12 @@ const peer = basePeer(id, plex);
 Handles relaying messages and signaling between peers.
 
 ```javascript
-const relayHandler = webrtcSignalingRelay(manager, peer);
+const relayHandler = webrtcSignalingRelay(manager, remoteInterface);
 ```
 
 #### Parameters
-- **`manager`** (`Object`): The peer manager instance.
-- **`peer`** (`Object`): The peer instance (default: `manager`).
+- **`manager`** (`Object`): The remoteInterface manager instance.
+- **`remoteInterface`** (`Object`): The remoteInterface instance (default: `manager`).
 
 #### Returns
 - `Object`: An object exposing webrtcSignalingRelay-related methods as RPC.
@@ -114,14 +114,14 @@ const relayHandler = webrtcSignalingRelay(manager, peer);
 
 ### `server`
 
-Creates a server for managing peer connections and relaying messages.
+Creates a server for managing remoteInterface connections and relaying messages.
 
 ```javascript
-const incomingPlex$ = server(peerManager, config);
+const incomingPlex$ = server(createSocketManager, config);
 ```
 
 #### Parameters
-- **`peerManager`** (`Object`): The peer manager instance.
+- **`createSocketManager`** (`Object`): The remoteInterface manager instance.
 - **`config`** (`Object`): Configuration options for the server.
     - **`subnet`** (`string`): Subnet for IP allocation (default: `72.16.0.0/14`).
     - **`channel`** (`string`): Communication channel for signaling.
@@ -134,32 +134,32 @@ const incomingPlex$ = server(peerManager, config);
 
 ### `webSocketPeer`
 
-Creates a WebSocket-based peer.
+Creates a WebSocket-based remoteInterface.
 
 ```javascript
 const wsPeer = webSocketPeer(id, urlOrSocket, config);
 ```
 
 #### Parameters
-- **`id`** (`string`): The unique identifier for the peer.
+- **`id`** (`string`): The unique identifier for the remoteInterface.
 - **`urlOrSocket`** (`string|WebSocket`): WebSocket instance or URL for the connection.
 - **`config`** (`Object`): Additional WebSocket connection options.
 
 #### Returns
-- `Object`: The WebSocket-based peer instance.
+- `Object`: The WebSocket-based remoteInterface instance.
 
 ---
 
 ### `webSocketServer`
 
-Creates a WebSocket server for managing peer connections.
+Creates a WebSocket server for managing remoteInterface connections.
 
 ```javascript
-const wsServer = webSocketServer(peerManager, wss, config);
+const wsServer = webSocketServer(createSocketManager, wss, config);
 ```
 
 #### Parameters
-- **`peerManager`** (`Object`): The peer manager instance.
+- **`createSocketManager`** (`Object`): The remoteInterface manager instance.
 - **`wss`** (`Object`): WebSocket server instance (`ws.Server`).
 - **`config`** (`Object`): Configuration options.
     - **`close$`** (`Observable`): Observable signaling server closure (default: `NEVER`).
@@ -167,7 +167,7 @@ const wsServer = webSocketServer(peerManager, wss, config);
     - **`server$`** (`Subject`): Existing server subject (default: new server created using `server`).
 
 #### Returns
-- `Subject`: The subject for managing server peer connections.
+- `Subject`: The subject for managing server remoteInterface connections.
 
 ---
 
