@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "brittle tests/peermanager.test.js"
+    "test": "brittle tests/test.js"
   },
   "dependencies": {
     "@ngneat/elf": "^2.5.1",

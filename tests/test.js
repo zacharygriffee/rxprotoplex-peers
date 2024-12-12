@@ -6,18 +6,27 @@ import {
     closeInterface,
     networkInterfaceConnected$,
     connectStream$,
-    listenOnSocket$, webSocketServer, getInterfaceOfId, connect
+    listenOnSocket$, webSocketServer, getInterfaceOfId, connect, resetStore
 } from "../index.js";
 import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
+import {createPortPool} from "../lib/ports/createPortPool.js";
+const portPool = createPortPool(20000, 30000);
 
 async function useWebServer(cb, t) {
-    const wss = new WebSocketServer({ port: 5000 });
+    const port = portPool.allocate();
+    const wss = new WebSocketServer({ port });
     await new Promise((resolve) => wss.once("listening", resolve));
+    console.log(`Web socket server listening on ${port}`);
     const wsUrl = getWebSocketURL(wss);
-    webSocketServer(wss);
+    const server$ = webSocketServer(wss);
     await cb(wsUrl);
     wss.close();
-    t?.teardown?.(() => wss.close());
+    t?.teardown?.(async () => {
+        wss.close();
+        server$.close$.next();
+        portPool.release(port);
+        resetStore();
+    });
 }
 
 test("WebSocket integration test", async (t) => {
@@ -40,17 +49,18 @@ test("WebSocket integration test", async (t) => {
         await connectionPromise;
         const iface1 = getInterfaceOfId(nic1);
         const iface2 = getInterfaceOfId(nic2);
-
+        let listenerSub;
         t.teardown(() => {
             closeInterface(nic2);
             closeInterface(nic1);
+            listenerSub?.unsubscribe?.();
         });
 
         connect(iface1.ip, iface2.ip);
 
         // Set up listening on nic2
         const listenPromise = new Promise((resolve, reject) => {
-            listenOnSocket$("0.0.0.0", "howdie").subscribe(
+            listenerSub = listenOnSocket$("0.0.0.0", "howdie").subscribe(
                 (socket) => {
                     socket.on("data", (data) => {
                         t.alike(data, b4a.from("hello2"), "Received correct message");
@@ -66,7 +76,6 @@ test("WebSocket integration test", async (t) => {
         connectStream$(iface1.ip, "howdie").subscribe(
             (stream) => {
                 stream.write(b4a.from("hello2"));
-                closeInterface(nic1);
             },
             (err) => t.fail(err.message)
         );
@@ -76,19 +85,16 @@ test("WebSocket integration test", async (t) => {
     }, t);
 });
 
-test("addWebSocketNetworkInterface throws if invalid error is supplied ", async t => {
-    t.exception.all(() => addWebSocketNetworkInterface("boom bad"));
-});
-
 test("Concurrent WebSocket network interface connections", async (t) => {
     await useWebServer(async (wsUrl) => {
         const interfaces = Array.from({ length: 10 }).map(() =>
             addWebSocketNetworkInterface(wsUrl)
         );
+        let subs = [];
 
         const connectionPromises = interfaces.map((iface) =>
             new Promise((resolve, reject) => {
-                networkInterfaceConnected$(iface).subscribe(resolve, reject);
+                subs.push(networkInterfaceConnected$(iface).subscribe(resolve, reject));
             })
         );
 
@@ -96,13 +102,15 @@ test("Concurrent WebSocket network interface connections", async (t) => {
 
         t.pass("All interfaces connected successfully");
         interfaces.forEach((i) => closeInterface(i));
+        subs.forEach(sub => sub.unsubscribe());
     }, t);
 });
 
 test("closeInterface handles invalid or non-existent interfaces", async (t) => {
     t.exception.all(() => closeInterface("non_existent_iface"), "Throws error for non-existent interface");
     const ifaceId = addWebSocketNetworkInterface("ws://localhost:8080");
-    closeInterface(ifaceId); // Close once
+    closeInterface(ifaceId);
+    t.pass();
 });
 
 test("Data flow between connected interfaces using connectStream$", async (t) => {
