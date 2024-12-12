@@ -3,9 +3,9 @@
 A robust library for managing WebSocket and WebRTC signaling, socket multiplexing, and peer-to-peer communication. Designed with a reactive architecture leveraging RxJS and Protoplex, `rxprotoplex-peers` simplifies complex networking scenarios.
 
 ## Alpha !!!
-Testing and implementation of ping-pong (or user supplied) for connection health still in the works.
-As well, a dependency is giving off sirens about being dangerous due to ip package (ip SSRF improper categorization in isPublic ). This library really doesn't 
-use that feature of the webrtc library and I'm not concerned about it for my use case.
+Testing and implementation of ping-pong (or user-supplied) mechanisms for connection health are still in the works.
+
+Additionally, a dependency has been flagged for potential SSRF vulnerabilities due to the `ip` package. However, this library does not utilize the problematic feature, and this is not a concern for most use cases.
 
 ---
 
