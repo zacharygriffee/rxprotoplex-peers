@@ -146,6 +146,62 @@ test("Data flow between connected interfaces using connectStream$", async (t) =>
     }, t);
 });
 
+test("Listening on a specified IP address", async (t) => {
+    await useWebServer(async (wsUrl) => {
+        // Step 1: Set up two network interfaces
+        const nic1 = addWebSocketNetworkInterface(wsUrl);
+        const nic2 = addWebSocketNetworkInterface(wsUrl);
+
+        // Wait for both interfaces to connect
+        await Promise.all([
+            new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
+            new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
+        ]);
+
+        const iface1 = getInterfaceOfId(nic1);
+        const iface2 = getInterfaceOfId(nic2);
+
+        console.log("Testing interfaces:", iface1, iface2);
+        connect(iface1.ip, iface2.ip);
+
+        // Step 2: Set up listening on the specified IP
+        const received = [];
+        const listenPromise = new Promise((resolve, reject) => {
+            listenOnSocket$(iface1.ip, "specificTestChannel").subscribe(
+                (socket) => {
+                    console.log("Listening on socket:", socket);
+                    socket.on("data", (data) => {
+                        console.log("Received data:", data);
+                        received.push(data);
+                        resolve(); // Resolve when data is received
+                    });
+                },
+                (err) => {
+                    console.error("Error in listenOnSocket$:", err);
+                    reject(err);
+                }
+            );
+        });
+
+        // Step 3: Send a message to the specified IP
+        connectStream$(iface1.ip, "specificTestChannel").subscribe(
+            (stream) => {
+                console.log("Stream connected, sending message");
+                stream.write(b4a.from("test message"));
+            },
+            (err) => t.fail("Failed to connect stream: " + err.message)
+        );
+
+        // Wait for data to be received
+        await listenPromise;
+
+        // Step 4: Validate the received message
+        t.is(received.length, 1, "Received exactly one message");
+        t.alike(received[0], b4a.from("test message"), "Received message matches sent data");
+    }, t);
+});
+
+
 test("Reconnection of network interfaces", async (t) => {
     await useWebServer(async (wsUrl) => {
         const nic1 = addWebSocketNetworkInterface(wsUrl);
@@ -169,3 +225,39 @@ test("Reconnection of network interfaces", async (t) => {
         t.ok(newNic1, "Interface 1 reconnected successfully");
     }, t);
 });
+// todo: need to be able to set watermark level and will
+//       have to fix that upstream modules
+// test("Stress test with high data volume", async (t) => {
+//     await useWebServer(async (wsUrl) => {
+//         const nic1 = addWebSocketNetworkInterface(wsUrl);
+//         const nic2 = addWebSocketNetworkInterface(wsUrl);
+//
+//         await Promise.all([
+//             new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
+//             new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
+//         ]);
+//
+//         const iface1 = getInterfaceOfId(nic1);
+//         const iface2 = getInterfaceOfId(nic2);
+//
+//         connect(iface1.ip, iface2.ip);
+//
+//         const largeMessage = b4a.from("x".repeat(1024)); // 1 MB message
+//         const received = [];
+//
+//         listenOnSocket$(iface1.ip, "stressTest").subscribe((socket) => {
+//             console.log(socket.localIp, iface1)
+//             socket.on("data", (data) => received.push(data));
+//         });
+//
+//         connectStream$(iface1.ip, "stressTest").subscribe((stream) => {
+//             stream.write(largeMessage);
+//         });
+//
+//         await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for transmission
+//
+//         t.is(received.length, 1, "Received expected number of messages");
+//         t.alike(received[0], largeMessage, "Received correct data");
+//     }, t);
+// });
+
