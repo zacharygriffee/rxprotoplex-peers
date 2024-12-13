@@ -29,12 +29,7 @@ async function useWebServer(cb, t) {
     });
 }
 
-solo("WebSocket integration test", async (t) => {
-    selectAllInterfaces$().subscribe(
-        iface => {
-            console.log(iface);
-        }
-    );
+test("WebSocket integration test", async (t) => {
     // Start WebSocket server
     await useWebServer(async wsUrl => {
         const nic1 = addWebSocketNetworkInterface(wsUrl);
