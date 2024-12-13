@@ -6,7 +6,7 @@ import {
     closeInterface,
     networkInterfaceConnected$,
     connectStream$,
-    listenOnSocket$, webSocketServer, getInterfaceOfId, connect, resetStore
+    listenOnSocket$, webSocketServer, getInterfaceOfId, connect, resetStore, selectAllInterfaces$
 } from "../index.js";
 import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
 import {createPortPool} from "../lib/ports/createPortPool.js";
@@ -29,7 +29,12 @@ async function useWebServer(cb, t) {
     });
 }
 
-test("WebSocket integration test", async (t) => {
+solo("WebSocket integration test", async (t) => {
+    selectAllInterfaces$().subscribe(
+        iface => {
+            console.log(iface);
+        }
+    );
     // Start WebSocket server
     await useWebServer(async wsUrl => {
         const nic1 = addWebSocketNetworkInterface(wsUrl);
