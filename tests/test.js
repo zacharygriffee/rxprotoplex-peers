@@ -15,14 +15,15 @@ import {
 } from "../index.js";
 import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
 import {createPortPool} from "../lib/ports/createPortPool.js";
-import {firstValueFrom} from "rxjs";
+import {firstValueFrom, take} from "rxjs";
+
 const portPool = createPortPool(20000, 30000);
 
 enableLocalHostInterface();
 
 async function useWebServer(cb, t) {
     const port = portPool.allocate();
-    const wss = new WebSocketServer({ port });
+    const wss = new WebSocketServer({port});
     await new Promise((resolve) => wss.once("listening", resolve));
     console.log(`Web socket server listening on ${port}`);
     const wsUrl = getWebSocketURL(wss);
@@ -41,15 +42,15 @@ test("LocalHost test", async t => {
     t.plan(1);
     const iface = getInterfaceOfId("lo");
     connect(iface.ip, iface.ip);
-    listenOnSocket$("127.0.0.1", "howdie").subscribe(
+    listenOnSocket$("127.0.0.1", "howdie").pipe(take(1)).subscribe(
         (socket) => {
-            socket.on("data", (data) => {
+            socket.once("data", (data) => {
                 t.alike(data, b4a.from("hello2"), "Received correct message");
+
             });
         }
     );
-    // Send a message from nic1 to nic2
-    connectStream$(iface.ip, "howdie").subscribe(
+    connectStream$(iface.ip, "howdie").pipe(take(1)).subscribe(
         (stream) => {
             stream.write(b4a.from("hello2"));
         },
@@ -61,15 +62,15 @@ test("Send empty", async t => {
     t.plan(1);
     const iface = getInterfaceOfId("lo");
     connect(iface.ip, iface.ip);
-    listenOnSocket$("127.0.0.1", "howdie").subscribe(
+    listenOnSocket$("127.0.0.1", "howdie").pipe(take(1)).subscribe(
         (socket) => {
-            socket.on("data", (data) => {
+            socket.once("data", (data) => {
                 t.ok(b4a.equals(data, b4a.alloc(0)), "Received correct empty message");
             });
         }
     );
     // Send a message from nic1 to nic2
-    connectStream$(iface.ip, "howdie").subscribe(
+    connectStream$(iface.ip, "howdie").pipe(take(1)).subscribe(
         (stream) => {
             stream.write(b4a.alloc(0));
         },
@@ -135,7 +136,7 @@ test("WebSocket integration test", async (t) => {
 
 test("Concurrent WebSocket network interface connections", async (t) => {
     await useWebServer(async (wsUrl) => {
-        const interfaces = Array.from({ length: 10 }).map(() =>
+        const interfaces = Array.from({length: 10}).map(() =>
             addWebSocketNetworkInterface(wsUrl)
         );
         let subs = [];
