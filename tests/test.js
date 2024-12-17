@@ -57,6 +57,26 @@ test("LocalHost test", async t => {
     );
 });
 
+test("Send empty", async t => {
+    t.plan(1);
+    const iface = getInterfaceOfId("lo");
+    connect(iface.ip, iface.ip);
+    listenOnSocket$("127.0.0.1", "howdie").subscribe(
+        (socket) => {
+            socket.on("data", (data) => {
+                t.ok(b4a.equals(data, b4a.alloc(0)), "Received correct empty message");
+            });
+        }
+    );
+    // Send a message from nic1 to nic2
+    connectStream$(iface.ip, "howdie").subscribe(
+        (stream) => {
+            stream.write(b4a.alloc(0));
+        },
+        (err) => t.fail(err.message)
+    );
+});
+
 test("WebSocket integration test", async (t) => {
     // Start WebSocket server
     await useWebServer(async wsUrl => {

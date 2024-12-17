@@ -1,6 +1,6 @@
 {
   "name": "rxprotoplex-peers",
-  "version": "0.0.9",
+  "version": "0.0.11",
   "description": "A reactive peer-to-peer management library built on RxJS and Protoplex for efficient signaling, matchmaking, and multiplexing.",
   "main": "index.js",
   "type": "module",
@@ -14,9 +14,9 @@
     "get-webrtc": "^1.0.1",
     "nanoid": "^5.0.8",
     "rxjs": "^7.8.1",
-    "rxprotoplex": "^1.2.3",
-    "rxprotoplex-rpc": "^1.0.6",
-    "rxprotoplex-websocket": "^1.0.3"
+    "rxprotoplex": "^1.2.4",
+    "rxprotoplex-rpc": "^1.0.7",
+    "rxprotoplex-websocket": "^1.0.4"
   },
   "devDependencies": {
     "brittle": "^3.7.0",
