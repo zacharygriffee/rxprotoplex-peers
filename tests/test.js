@@ -6,11 +6,19 @@ import {
     closeInterface,
     networkInterfaceConnected$,
     connectStream$,
-    listenOnSocket$, webSocketServer, getInterfaceOfId, connect, resetStore, selectAllInterfaces$
+    listenOnSocket$,
+    webSocketServer,
+    getInterfaceOfId,
+    connect,
+    resetStore,
+    selectAllInterfaces$, enableLocalHostInterface
 } from "../index.js";
 import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
 import {createPortPool} from "../lib/ports/createPortPool.js";
+import {firstValueFrom} from "rxjs";
 const portPool = createPortPool(20000, 30000);
+
+enableLocalHostInterface();
 
 async function useWebServer(cb, t) {
     const port = portPool.allocate();
@@ -28,6 +36,26 @@ async function useWebServer(cb, t) {
         resetStore();
     });
 }
+
+test("LocalHost test", async t => {
+    t.plan(1);
+    const iface = getInterfaceOfId("lo");
+    connect(iface.ip, iface.ip);
+    listenOnSocket$("127.0.0.1", "howdie").subscribe(
+        (socket) => {
+            socket.on("data", (data) => {
+                t.alike(data, b4a.from("hello2"), "Received correct message");
+            });
+        }
+    );
+    // Send a message from nic1 to nic2
+    connectStream$(iface.ip, "howdie").subscribe(
+        (stream) => {
+            stream.write(b4a.from("hello2"));
+        },
+        (err) => t.fail(err.message)
+    );
+});
 
 test("WebSocket integration test", async (t) => {
     // Start WebSocket server

@@ -9,3 +9,4 @@ export {server} from "./lib/servers/server.js";
 export {webSocketServer} from "./lib/servers/webSocketServer.js";
 // Server utils
 export {getWebSocketURL} from "./lib/util/getWebSocketUrl.js";
+export {enableLocalHostInterface} from "./lib/network-interfaces/local-host-interface.js";
