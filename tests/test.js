@@ -1,4 +1,4 @@
-import {solo, test} from "brittle";
+import {solo, test, skip} from "brittle";
 import {WebSocketServer} from "ws";
 import b4a from "b4a";
 import {
@@ -276,37 +276,40 @@ test("Reconnection of network interfaces", async (t) => {
 });
 // todo: need to be able to set watermark level and will
 //       have to fix that upstream modules
-// test("Stress test with high data volume", async (t) => {
-//     await useWebServer(async (wsUrl) => {
-//         const nic1 = addWebSocketNetworkInterface(wsUrl);
-//         const nic2 = addWebSocketNetworkInterface(wsUrl);
-//
-//         await Promise.all([
-//             new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
-//             new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
-//         ]);
-//
-//         const iface1 = getInterfaceOfId(nic1);
-//         const iface2 = getInterfaceOfId(nic2);
-//
-//         connect(iface1.ip, iface2.ip);
-//
-//         const largeMessage = b4a.from("x".repeat(1024)); // 1 MB message
-//         const received = [];
-//
-//         listenOnSocket$(iface1.ip, "stressTest").subscribe((socket) => {
-//             console.log(socket.localIp, iface1)
-//             socket.on("data", (data) => received.push(data));
-//         });
-//
-//         connectStream$(iface1.ip, "stressTest").subscribe((stream) => {
-//             stream.write(largeMessage);
-//         });
-//
-//         await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for transmission
-//
-//         t.is(received.length, 1, "Received expected number of messages");
-//         t.alike(received[0], largeMessage, "Received correct data");
-//     }, t);
-// });
+test("Stress test with high data volume", async (t) => {
+    t.plan(1);
+    await useWebServer(async (wsUrl) => {
+        const nic1 = addWebSocketNetworkInterface(wsUrl);
+        const nic2 = addWebSocketNetworkInterface(wsUrl);
+
+        await Promise.all([
+            new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
+            new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
+        ]);
+
+        const iface1 = getInterfaceOfId(nic1);
+        const iface2 = getInterfaceOfId(nic2);
+
+        connect(iface1.ip, iface2.ip);
+
+        const largeMessage = b4a.from("x".repeat(1024 * 1024)); // 1 MB message
+
+        const result = await new Promise(resolve => {
+            listenOnSocket$(iface1.ip, "stressTest").subscribe((socket) => {
+                console.log(socket.localIp, iface1)
+                socket.once("data", data => {
+                    socket.once("data", () => t.fail("Only one message expected"));
+                    resolve(data);
+                });
+            });
+
+            connectStream$(iface1.ip, "stressTest").subscribe((stream) => {
+                stream.write(largeMessage);
+            });
+        });
+
+        // await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait for transmission
+        t.alike(result, largeMessage, "Received correct data");
+    }, t);
+});
 
