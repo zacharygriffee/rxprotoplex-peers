@@ -19,8 +19,6 @@ import {firstValueFrom, take} from "rxjs";
 
 const portPool = createPortPool(20000, 30000);
 
-enableLocalHostInterface();
-
 async function useWebServer(cb, t) {
     const port = portPool.allocate();
     const wss = new WebSocketServer({port});
@@ -39,6 +37,30 @@ async function useWebServer(cb, t) {
 }
 
 test("LocalHost test", async t => {
+    enableLocalHostInterface();
+    t.plan(1);
+    const iface = getInterfaceOfId("lo");
+    connect(iface.ip, iface.ip);
+    listenOnSocket$("127.0.0.1", "howdie").pipe(take(1)).subscribe(
+        (socket) => {
+            socket.once("data", (data) => {
+                t.alike(data, b4a.from("hello2"), "Received correct message");
+
+            });
+        }
+    );
+    connectStream$(iface.ip, "howdie").pipe(take(1)).subscribe(
+        (stream) => {
+            stream.write(b4a.from("hello2"));
+        },
+        (err) => t.fail(err.message)
+    );
+});
+
+test("enableLocalHost resetStore and reenableLocalHost", t => {
+    enableLocalHostInterface();
+    resetStore();
+    enableLocalHostInterface();
     t.plan(1);
     const iface = getInterfaceOfId("lo");
     connect(iface.ip, iface.ip);
@@ -311,3 +333,47 @@ test("Stress test with high data volume", async (t) => {
     }, t);
 });
 
+test("Connect with all interfaces", async t => {
+    t.plan(1);
+    await useWebServer(async (wsUrl) => {
+        const nic1 = addWebSocketNetworkInterface(wsUrl);
+        const nic2 = addWebSocketNetworkInterface(wsUrl);
+
+        await Promise.all([
+            new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
+            new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
+        ]);
+
+        const iface1 = getInterfaceOfId(nic1);
+        const iface2 = getInterfaceOfId(nic2);
+
+        connect(iface1.ip, iface2.ip);
+
+        listenOnSocket$("0.0.0.0", "stressTest").pipe(take(1)).subscribe((socket) => {
+            console.log(socket.localIp, iface1)
+            socket.once("data", data => {
+                socket.once("data", () => t.fail("Only one message expected"));
+                t.ok(`${data}`, "what are you doing tonight?");
+            });
+        });
+
+        connectStream$(iface1.ip, "stressTest").subscribe((stream) => {
+            stream.write(b4a.from("what are you doing tonight?"));
+        });
+    }, t);
+});
+
+test("Connect with all interfaces from localhost", async t => {
+    enableLocalHostInterface();
+    t.plan(1);
+    listenOnSocket$("0.0.0.0", "stressTest").pipe(take(1)).subscribe((socket) => {
+        socket.once("data", data => {
+            socket.once("data", () => t.fail("Only one message expected"));
+            t.ok(`${data}`, "what are you doing tonight?");
+        });
+    });
+
+    connectStream$("127.0.0.1", "stressTest").pipe(take(1)).subscribe((stream) => {
+        stream.write(b4a.from("what are you doing tonight?"));
+    });
+});

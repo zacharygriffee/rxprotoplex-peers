@@ -1,6 +1,6 @@
 {
   "name": "rxprotoplex-peers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A reactive peer-to-peer management library built on RxJS and Protoplex for efficient signaling, matchmaking, and multiplexing.",
   "main": "index.js",
   "type": "module",
