@@ -274,8 +274,6 @@ test("Reconnection of network interfaces", async (t) => {
         t.ok(newNic1, "Interface 1 reconnected successfully");
     }, t);
 });
-// todo: need to be able to set watermark level and will
-//       have to fix that upstream modules
 test("Stress test with high data volume", async (t) => {
     t.plan(1);
     await useWebServer(async (wsUrl) => {
