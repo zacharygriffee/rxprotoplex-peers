@@ -11,7 +11,7 @@ import {
     getInterfaceOfId,
     connect,
     resetStore,
-    selectAllInterfaces$, enableLocalHostInterface
+    selectAllInterfaces$, enableLocalHostInterface, connectToAllInterfaces
 } from "../index.js";
 import {getWebSocketURL} from "../lib/util/getWebSocketUrl.js";
 import {createPortPool} from "../lib/ports/createPortPool.js";
@@ -79,7 +79,6 @@ test("enableLocalHost resetStore and reenableLocalHost", t => {
         (err) => t.fail(err.message)
     );
 });
-
 test("Send empty", async t => {
     t.plan(1);
     const iface = getInterfaceOfId("lo");
@@ -363,7 +362,7 @@ test("Connect with all interfaces", async t => {
     }, t);
 });
 
-test("Connect with all interfaces from localhost", async t => {
+test("Connect with wildcard '0.0.0.0' from localhost", async t => {
     enableLocalHostInterface();
     t.plan(1);
     listenOnSocket$("0.0.0.0", "stressTest").pipe(take(1)).subscribe((socket) => {
@@ -376,4 +375,36 @@ test("Connect with all interfaces from localhost", async t => {
     connectStream$("127.0.0.1", "stressTest").pipe(take(1)).subscribe((stream) => {
         stream.write(b4a.from("what are you doing tonight?"));
     });
+    t.teardown(() => resetStore());
+});
+
+test("Connect with all network interfaces with localhost enabled", async t => {
+    enableLocalHostInterface();
+    t.plan(1);
+    await useWebServer(async (wsUrl) => {
+        const nic1 = addWebSocketNetworkInterface(wsUrl);
+        const nic2 = addWebSocketNetworkInterface(wsUrl);
+
+        await Promise.all([
+            new Promise((resolve) => networkInterfaceConnected$(nic1).subscribe(resolve)),
+            new Promise((resolve) => networkInterfaceConnected$(nic2).subscribe(resolve)),
+        ]);
+
+        const iface1 = getInterfaceOfId(nic1);
+        const iface2 = getInterfaceOfId(nic2);
+
+        connectToAllInterfaces(iface2.ip)
+
+        listenOnSocket$("0.0.0.0", "stressTest").pipe(take(1)).subscribe((socket) => {
+            console.log(socket.localIp, iface1)
+            socket.once("data", data => {
+                socket.once("data", () => t.fail("Only one message expected"));
+                t.ok(`${data}`, "what are you doing tonight?");
+            });
+        });
+
+        connectStream$(iface1.ip, "stressTest").subscribe((stream) => {
+            stream.write(b4a.from("what are you doing tonight?"));
+        });
+    }, t);
 });
